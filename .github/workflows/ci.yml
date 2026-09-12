@@ -23,8 +23,11 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Run backend test suite
         # The suite is pure-logic (no DB/MinIO fixtures anywhere in backend/tests), so it runs
-        # directly against the built image with no other services needed.
-        run: docker run --rm sonicmap-api:ci python -m pytest -q
+        # directly against the built image with no other services needed. Tests aren't baked
+        # into the image on purpose (the Dockerfile only COPYs app/alembic, keeping the
+        # production image lean) - dev compose supplies them via a bind-mount, and this does
+        # the same thing for CI rather than changing what ships in the image.
+        run: docker run --rm -v "$PWD/backend/tests:/app/tests" sonicmap-api:ci python -m pytest -q
 
   frontend-checks:
     runs-on: ubuntu-latest
@@ -39,6 +42,12 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Next.js 16 generates ambient types for typed routes/layout props (e.g.
+      # `LayoutProps<"/">`) into .next/ the first time `next dev` or `next build` runs.
+      # A clean CI checkout has neither yet, so `tsc --noEmit` needs this first or it
+      # fails on names that only exist after a build - `next typegen` does just that
+      # generation step, without running a full build.
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run build

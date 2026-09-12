@@ -84,7 +84,13 @@ export function StemMixer({
   const masterName = names[0];
   const duration = manifest.job.duration_seconds ?? 0;
   const anySolo = Object.values(mix).some((state) => state.solo);
-  discoverRef.current = onDiscover;
+
+  // Kept in sync via an effect rather than assigned during render: a render can run without
+  // committing (e.g. under Suspense or other concurrent-rendering interruptions), and mutating
+  // a ref as a side effect of that phantom render would drift it from what actually committed.
+  useEffect(() => {
+    discoverRef.current = onDiscover;
+  }, [onDiscover]);
 
   useEffect(() => {
     for (const name of names) {

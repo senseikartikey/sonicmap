@@ -13,13 +13,7 @@
  * on a single downbeat.
  */
 import { BeatGrid, detectBeatGrid, fromServerGrid, secondsPerBar as barSeconds } from "@/lib/beatGrid";
-import {
-  BEATS_PER_BAR,
-  LEAD_IN_BARS,
-  PHRASE_BARS,
-  TAIL_BARS,
-  planAlignment,
-} from "@/lib/mixAlignment";
+import { BEATS_PER_BAR, planAlignment } from "@/lib/mixAlignment";
 import { PlannedTrack, PlannedTransition, TransitionKind } from "@/lib/types";
 import { refreshPreviewUrl } from "@/lib/api";
 

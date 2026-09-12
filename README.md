@@ -108,3 +108,9 @@ catalog enrichment, under `job_type="beat_grid"`.
 Spotify OAuth, search/paste/playlist ingestion, persistent maps, recommendations, catalog
 enrichment, Set Studio, and all three signed-in visualizations are implemented. `PRODUCT.md`
 and `DESIGN.md` describe deeper product and design decisions.
+
+## Deploying
+
+`deploy/DEPLOY.md` walks through a production deployment: the frontend on Vercel, everything
+else (Postgres, MinIO, and the four backend services) on a single small VM behind Caddy for
+automatic HTTPS. `docker-compose.prod.yml` is the hardened override used for that.
