@@ -1,0 +1,85 @@
+# Production override. Use alongside the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What changes from the dev compose file, and why:
+#   - No source bind-mounts: code is baked into the image at build time, so a deploy is
+#     "pull + build + up", not "hope nobody edited a file on the server by hand".
+#   - No `--reload` on uvicorn: reload watches the filesystem for changes that will never
+#     come (there's no mounted source to change) and costs CPU/memory for nothing.
+#   - Real secrets come from env vars (set in the server's own backend/.env, never committed)
+#     instead of the hardcoded dev defaults ("sonicmap", "sonicmap-dev-secret") in the base file.
+#   - MinIO's S3 API is reachable at a real HTTPS hostname (via the caddy service below)
+#     instead of a bare 127.0.0.1 port, because presigned upload/download URLs are handed
+#     straight to the browser - it has to be able to reach that host directly, over TLS.
+#   - A `caddy` service in front of api + minio, for automatic Let's Encrypt certificates.
+#     Nothing else needs to be internet-facing: db stays on 127.0.0.1 only, exactly as in
+#     the base file.
+
+services:
+  db:
+    ports: !reset []  # not reachable from outside this machine at all, not even via 127.0.0.1
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  api:
+    volumes: !reset []
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:${POSTGRES_PASSWORD}@db:5432/sonicmap
+      STEM_S3_PUBLIC_ENDPOINT_URL: https://${STORAGE_DOMAIN}
+      STEM_S3_ACCESS_KEY: sonicmap
+      STEM_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      # Off by default for the same reason the code's own README asks for a deliberate
+      # legal/product review before flipping it on for a real, publicly-reachable deployment -
+      # downloading third-party YouTube audio carries different risk once strangers can trigger
+      # it, versus the one developer running it locally. Set to "true" here only after that
+      # review, mirroring stem-worker below.
+      STEM_YOUTUBE_ENABLED: "false"
+    ports: !reset []  # only reachable through caddy now
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+
+  catalog-worker:
+    volumes: !reset []
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:${POSTGRES_PASSWORD}@db:5432/sonicmap
+
+  beat-worker:
+    volumes: !override
+      - stem_models:/root/.cache/torch
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:${POSTGRES_PASSWORD}@db:5432/sonicmap
+
+  stem-worker:
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:${POSTGRES_PASSWORD}@db:5432/sonicmap
+      STEM_S3_PUBLIC_ENDPOINT_URL: https://${STORAGE_DOMAIN}
+      STEM_S3_ACCESS_KEY: sonicmap
+      STEM_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      STEM_YOUTUBE_ENABLED: "false"
+
+  minio:
+    ports: !reset []  # only reachable through caddy now (S3 API), console stays unpublished entirely
+    environment:
+      MINIO_ROOT_USER: sonicmap
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_API_CORS_ALLOW_ORIGIN: https://${FRONTEND_DOMAIN}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+      STORAGE_DOMAIN: ${STORAGE_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - minio
+
+volumes:
+  caddy_data:
+  caddy_config:

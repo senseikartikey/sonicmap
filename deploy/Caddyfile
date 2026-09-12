@@ -1,0 +1,13 @@
+# Caddy gets a real Let's Encrypt certificate for each hostname automatically the first time
+# it's requested - no certbot, no manual renewal. {$VAR} pulls from the environment passed
+# into the caddy service in docker-compose.prod.yml.
+
+{$API_DOMAIN} {
+	reverse_proxy api:8000
+}
+
+{$STORAGE_DOMAIN} {
+	# MinIO's S3 API. Presigned upload/download URLs point straight here from the browser,
+	# so this has to be reachable directly - it is not proxied through the api service.
+	reverse_proxy minio:9000
+}
