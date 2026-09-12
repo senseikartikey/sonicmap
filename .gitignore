@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Env files (real secrets live only in these; *.example files are tracked)
+.env
+backend/.env
+frontend/.env*.local
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+
+# Large re-downloadable dataset dump - see README for the download step.
+backend/catalog-data/*
+!backend/catalog-data/.gitkeep
+
+# Local design-tool caches, not project source
+.impeccable/
+frontend/.impeccable/
+
+# Local AI-session tooling data
+.claude/
+
+# Misc local artifacts
+build.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI-session handoff notes, not project documentation
+HANDOVER.md
+frontend/CLAUDE.md

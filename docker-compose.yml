@@ -1,0 +1,121 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonicmap
+      POSTGRES_PASSWORD: sonicmap
+      POSTGRES_DB: sonicmap
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonicmap"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:sonicmap@db:5432/sonicmap
+      STEM_S3_ENDPOINT_URL: http://minio:9000
+      STEM_S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:9000
+      STEM_YOUTUBE_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      # Without this a new migration is invisible to alembic until the whole image is
+      # rebuilt — and the api image carries essentia-tensorflow, so that rebuild is long
+      # enough that it silently discourages writing migrations at all.
+      - ./backend/alembic:/app/alembic
+      - ./backend/catalog-data:/catalog-data:ro
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-access-log"]
+
+  catalog-worker:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:sonicmap@db:5432/sonicmap
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+    command: ["python", "-m", "app.scripts.catalog_worker"]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: sonicmap
+      MINIO_ROOT_PASSWORD: sonicmap-dev-secret
+      MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:3001,http://localhost:3001
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - stem_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Beat/downbeat grids. Shares the stem image because beat_this needs torch, which the api
+  # image (Essentia + TensorFlow) does not carry. Same durable queue as catalog enrichment,
+  # different job_type.
+  beat-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.stems
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:sonicmap@db:5432/sonicmap
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      # The 77 MB checkpoint is downloaded once and kept, not re-fetched per container start.
+      - stem_models:/root/.cache/torch
+    command: ["python", "-m", "app.scripts.beat_worker"]
+
+  stem-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.stems
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://sonicmap:sonicmap@db:5432/sonicmap
+      STEM_S3_ENDPOINT_URL: http://minio:9000
+      STEM_S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:9000
+      STEM_S3_ACCESS_KEY: sonicmap
+      STEM_S3_SECRET_KEY: sonicmap-dev-secret
+      STEM_YOUTUBE_ENABLED: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - stem_models:/root/.cache/torch
+
+volumes:
+  db_data:
+  stem_data:
+  stem_models:

@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base: #0a0907;
+  --bg-surface: #100f0d;
+  --bg-card: #161412;
+  --bg-panel: #141210;
+  --bg-media: #0e0c0a;
+
+  --border-subtle: rgba(255, 248, 230, 0.07);
+  --border-medium: rgba(255, 248, 230, 0.13);
+  --border-accent: rgba(212, 160, 60, 0.55);
+
+  --text-primary: #f0ebe0;
+  --text-muted: #6a6357;
+  --text-body: #a89e8c;
+  /* Lightened from #6b6355 — the original failed WCAG AA (3.1-3.4:1) at the 10-13px sizes
+     this token ships at almost everywhere (audio-feature readouts, table headers, labels).
+     #8a8175 clears 4.5:1 on both --bg-base (5.19:1) and --bg-card (4.79:1). */
+  --text-tertiary: #8a8175;
+
+  --accent: #d4a03c;
+  --accent-bright: #e8b84e;
+  --accent-glow: rgba(212, 160, 60, 0.18);
+  --accent-subtle: rgba(212, 160, 60, 0.08);
+
+  --success: #4fb571;
+  --success-subtle: rgba(79, 181, 113, 0.12);
+  --error: #d1554f;
+  --error-subtle: rgba(209, 85, 79, 0.12);
+  --info: #6a9fd4;
+
+  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, monospace;
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+
+  --text-body-size: 15px;
+  --leading-relaxed: 1.6;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
+
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 130ms; --dur-base: 200ms; --dur-enter: 480ms;
+
+  --grain-opacity: 0.035;
+
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+}
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-relaxed);
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* Shared type roles keep the marketing page and application shell on one hierarchy. */
+.sonicmap-brand {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+.type-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+.type-body { font-family: var(--font-sans); line-height: var(--leading-relaxed); }
+.type-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-size: 128px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--r-pill);
+  border: 2px solid var(--bg-base);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+* {
+  scrollbar-color: var(--border-medium) var(--bg-base);
+  scrollbar-width: thin;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* numeric readouts stay tabular so columns of BPM/energy/distance don't jitter */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visually hidden but present for screen readers/heading navigation — e.g. a page's real
+   h1 when the visual design has no room for a literal on-screen title. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A skip link is sr-only until it receives keyboard focus, then it must become visible —
+   it's the first focusable element on the page precisely so a keyboard user can act on it. */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--sp-4);
+  z-index: 1000;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-accent);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: var(--sp-3) var(--sp-5);
+  font-size: var(--text-sm, 13px);
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: var(--sp-4);
+}
+
+@keyframes btn-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(212, 160, 60, 0.5), 0 0 20px rgba(212, 160, 60, 0.22), 0 0 40px rgba(212, 160, 60, 0.09);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(212, 160, 60, 0.68), 0 0 28px rgba(212, 160, 60, 0.32), 0 0 52px rgba(212, 160, 60, 0.15);
+  }
+}
+
+@keyframes orb-breathe {
+  from { opacity: 0.8; transform: translateX(-50%) scale(1); }
+  to { opacity: 1; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes node-glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(212, 160, 60, 0.55)); }
+  50% { filter: drop-shadow(0 0 9px rgba(212, 160, 60, 0.85)); }
+}
+
+/* The nav graph quietly behaves like the product it represents: a signal travels around the
+   three links while each node answers in sequence. Kept transform-only/paint-light at 18px. */
+@keyframes logomark-signal {
+  0% { stroke-dashoffset: 22; opacity: 0.28; }
+  35%, 65% { opacity: 0.95; }
+  100% { stroke-dashoffset: 0; opacity: 0.28; }
+}
+
+@keyframes logomark-node-pulse {
+  0%, 72%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(232, 184, 78, 0)); }
+  82% { transform: scale(1.22); filter: drop-shadow(0 0 2.5px rgba(232, 184, 78, 0.72)); }
+}
+
+.sonicmap-logomark__edge {
+  stroke-dasharray: 4 18;
+  animation: logomark-signal 3.2s linear infinite;
+}
+.sonicmap-logomark__edge--2 { animation-delay: 0.34s; }
+.sonicmap-logomark__edge--3 { animation-delay: 0.68s; }
+
+.sonicmap-logomark__node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: logomark-node-pulse 3.2s ease-in-out infinite;
+}
+.sonicmap-logomark__node--2 { animation-delay: 0.38s; }
+.sonicmap-logomark__node--3 { animation-delay: 0.76s; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Landing hero constellation motif — a slow, continuous drift so the taste-map visual reads
+   as alive rather than a static illustration. */
+@keyframes constellation-drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-6px, 8px) rotate(0.6deg); }
+}
+
+@keyframes particle-drift {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10%, 90% { opacity: 1; }
+  100% { transform: translateY(-120px) translateX(var(--drift-x, 20px)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .sonicmap-logomark__edge,
+  .sonicmap-logomark__node {
+    animation: none !important;
+  }
+}

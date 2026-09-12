@@ -1,0 +1,15 @@
+sqlalchemy>=2.0
+psycopg[binary]>=3.2
+pgvector>=0.3
+pydantic>=2.8
+pydantic-settings>=2.4
+boto3>=1.35
+httpx>=0.27
+numpy>=1.26
+demucs==4.0.1
+soundfile>=0.12,<0.14
+yt-dlp>=2026.1.1
+# Beat and downbeat tracking (ISMIR 2024, MIT licence). Lives in this image because it needs
+# torch, which only this image has. madmom is deliberately NOT installed: it is unusable on
+# Python 3.11 / numpy 2, and beat_this only wants it for optional DBN post-processing.
+beat-this==1.1.0
