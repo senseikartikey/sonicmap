@@ -38,3 +38,5 @@ Thumbs.db
 # AI-session handoff notes, not project documentation
 HANDOVER.md
 frontend/CLAUDE.md
+
+.vercel

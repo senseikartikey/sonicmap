@@ -114,3 +114,31 @@ and `DESIGN.md` describe deeper product and design decisions.
 `deploy/DEPLOY.md` walks through a production deployment: the frontend on Vercel, everything
 else (Postgres, MinIO, and the four backend services) on a single small VM behind Caddy for
 automatic HTTPS. `docker-compose.prod.yml` is the hardened override used for that.
+
+### Free personal deployment
+
+For a personal demo, the frontend can stay on Vercel while the full Docker stack runs on an
+always-on local computer. Keep Postgres and MinIO bound to loopback; expose only the API and
+MinIO through separate HTTPS tunnels because Stem Studio uploads use browser-direct presigned
+URLs.
+
+Start the stack and migrations:
+
+```bash
+docker-compose up -d --build
+docker-compose exec api alembic upgrade head
+```
+
+Run two Cloudflare Quick Tunnels, one for each local service:
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8000
+cloudflared tunnel --url http://127.0.0.1:9000
+```
+
+Set `NEXT_PUBLIC_API_BASE_URL` in the Vercel production environment to the API tunnel URL.
+In the local root `.env`, set `STEM_S3_PUBLIC_ENDPOINT_URL` to the MinIO tunnel URL and set a
+unique `MINIO_ROOT_PASSWORD`. In `backend/.env`, set `FRONTEND_BASE_URL` to the Vercel origin,
+enable `STEM_STUDIO_ENABLED`, and use the same MinIO secret. Add the API tunnel callback URLs
+to the Spotify and Google OAuth applications. Quick Tunnel hostnames change after a restart,
+so these values must be updated when that happens.

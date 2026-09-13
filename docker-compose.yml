@@ -24,7 +24,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://sonicmap:sonicmap@db:5432/sonicmap
       STEM_S3_ENDPOINT_URL: http://minio:9000
-      STEM_S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:9000
+      STEM_S3_PUBLIC_ENDPOINT_URL: ${STEM_S3_PUBLIC_ENDPOINT_URL:-http://127.0.0.1:9000}
       STEM_YOUTUBE_ENABLED: "true"
     ports:
       - "127.0.0.1:8000:8000"
@@ -63,8 +63,8 @@ services:
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: sonicmap
-      MINIO_ROOT_PASSWORD: sonicmap-dev-secret
-      MINIO_API_CORS_ALLOW_ORIGIN: http://127.0.0.1:3001,http://localhost:3001
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-sonicmap-dev-secret}
+      MINIO_API_CORS_ALLOW_ORIGIN: https://sonicmap-omega.vercel.app,http://127.0.0.1:3001,http://localhost:3001
     ports:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
@@ -105,7 +105,7 @@ services:
       STEM_S3_ENDPOINT_URL: http://minio:9000
       STEM_S3_PUBLIC_ENDPOINT_URL: http://127.0.0.1:9000
       STEM_S3_ACCESS_KEY: sonicmap
-      STEM_S3_SECRET_KEY: sonicmap-dev-secret
+      STEM_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-sonicmap-dev-secret}
       STEM_YOUTUBE_ENABLED: "true"
     depends_on:
       db:
